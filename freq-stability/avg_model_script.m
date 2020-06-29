@@ -29,7 +29,7 @@ fig(figID) = figure('NumberTitle', 'off',...
 fig(figID).OuterPosition = fig(figID).InnerPosition;
 
 i = 1;
-sp(i) = subplot(1,1,1, ...
+subplot(1,1,1, ...
     'FontSize', 20, ...
     'FontName', 'OpenSans', ...
     'FontWeight', 'bold',...
@@ -40,8 +40,8 @@ hold on;
 histogram(Load/70,'Normalization','probability');
 
 ylim([0, 0.061]);
-ylabel(sp(i), 'Probability', 'FontSize', 24, 'FontWeight', 'bold');
-xlabel(sp(i), 'Power demand [pu]', 'FontSize', 24, 'FontWeight', 'bold');
+ylabel('Probability', 'FontSize', 24, 'FontWeight', 'bold');
+xlabel('Power demand [pu]', 'FontSize', 24, 'FontWeight', 'bold');
 
 
 
@@ -52,12 +52,12 @@ Tstep = 0.5;
 
 %% Model parameters
 % System
-b = 0.0428;
+Pb = 0.0428;
 rss = 0.025;
 rtr = 0.1;
 x0 = 0;
 M = 10.2;
-Dmin = b / (rss * (1-rtr));
+Dmin = Pb / (rss * (1-rtr));
 
 % Turbine governor
 Dtg = Dmin;
@@ -87,19 +87,19 @@ fig(figID) = figure('NumberTitle', 'off',...
 fig(figID).OuterPosition = fig(figID).InnerPosition;
 
 hold on;
-plot(Calc.D{1}.Values, ...
-        'Color','k', ...
-        'LineStyle','--', ...
-        'LineWidth',2, ....
-        'DisplayName','Steady-state limit');
 
-subplot(1,1,1, ...
+ha = subplot(1,1,1, ...
     'FontSize', 20, ...
     'FontName', 'OpenSans', ...
     'FontWeight', 'bold',...
     'XGrid', 'on', ...
     'YGrid', 'on');
 
+plot(Calc.D{1}.Values, ...
+        'Color','k', ...
+        'LineStyle','--', ...
+        'LineWidth',2, ....
+        'DisplayName','Steady-state limit');
 
 for k=1:numElements(Calc.D)
     plot(Sim.D{k}.Values,...
@@ -109,25 +109,26 @@ for k=1:numElements(Calc.D)
 end
 
 legend('Location', 'southeast');
-ylim([0, 0.036]);
-ylabel('Frequency deviation [pu]', 'FontSize', 24, 'FontWeight', 'bold');
+ylim([0, 0.037]);
+ylabel('Absolute frequency dev.  [pu]', 'FontSize', 24, 'FontWeight', 'bold');
 xlabel('Time [s]', 'FontSize', 24, 'FontWeight', 'bold');
+ha.XAxis.TickValues(1) = '';
 
 
 
 %% D sweep with rtr = rss
 rtr = rss;
-Dmin = b / (rss * (1-rtr));
-Sim.D = Simulink.SimulationData.Dataset;
-Calc.D = Simulink.SimulationData.Dataset;
+Dmin = Pb / (rss * (1-rtr));
+Sim.Drss = Simulink.SimulationData.Dataset;
+Calc.Drss = Simulink.SimulationData.Dataset;
 for D = Dmin*0.7:Dmin*0.1:Dmin*1.3
     sim('avg_model');
     elem = Simulink.SimulationData.Signal;
     elem.Name = sprintf('D=%.2f', D);
     elem.Values = yout{1}.Values;
-    Sim.D = addElement(Sim.D,elem);
+    Sim.Drss = addElement(Sim.Drss,elem);
     elem.Values = yout{2}.Values;
-    Calc.D = addElement(Calc.D,elem);
+    Calc.Drss = addElement(Calc.Drss,elem);
 end
 
 
@@ -140,48 +141,51 @@ fig(figID) = figure('NumberTitle', 'off',...
 fig(figID).OuterPosition = fig(figID).InnerPosition;
 
 hold on;
-plot(Calc.D{1}.Values, ...
-        'Color','k', ...
-        'LineStyle','--', ...
-        'LineWidth',2, ....
-        'DisplayName','Steady-state limit');
 
-subplot(1,1,1, ...
+ha = subplot(1,1,1, ...
     'FontSize', 20, ...
     'FontName', 'OpenSans', ...
     'FontWeight', 'bold',...
     'XGrid', 'on', ...
     'YGrid', 'on');
 
+plot(Calc.Drss{1}.Values, ...
+        'Color','k', ...
+        'LineStyle','--', ...
+        'LineWidth',2, ....
+        'DisplayName','Steady-state limit');
 
-for k=1:numElements(Calc.D)
-    plot(Sim.D{k}.Values,...
+for k=1:numElements(Calc.Drss)
+    plot(Sim.Drss{k}.Values,...
         'LineStyle','-', ...
         'LineWidth',2, ....
-        'DisplayName',sprintf('%s', Sim.D{k}.Name));
+        'DisplayName',sprintf('%s', Sim.Drss{k}.Name));
 end
 
 legend('Location', 'southeast');
-ylim([0, 0.036]);
-ylabel('Frequency deviation [pu]', 'FontSize', 24, 'FontWeight', 'bold');
+ylim([0, 0.037]);
 xlabel('Time [s]', 'FontSize', 24, 'FontWeight', 'bold');
+ha.XAxis.TickValues(1) = '';
+set(ha, 'YTickLabel','');
 
 
-%% b sweep 
+
+%% Pb sweep 
 D = 2.0;
+Dmin = D;
 rtr = 0.1;
-b =  D * (rss * (1-rtr));
-Sim.b = Simulink.SimulationData.Dataset;
-Calc.b = Simulink.SimulationData.Dataset;
+Pb =  D * (rss * (1-rtr));
+Sim.Pb = Simulink.SimulationData.Dataset;
+Calc.Pb = Simulink.SimulationData.Dataset;
 
-for b = b*0.7:b*0.1:b*1.3
+for Pb = Pb*0.7:Pb*0.1:Pb*1.3
     sim('avg_model');
     elem = Simulink.SimulationData.Signal;
-    elem.Name = sprintf('b=%.3f', b);
+    elem.Name = sprintf('Pb=%.3f', Pb);
     elem.Values = yout{1}.Values;
-    Sim.b = addElement(Sim.b,elem);
+    Sim.Pb = addElement(Sim.Pb,elem);
     elem.Values = yout{2}.Values;
-    Calc.b = addElement(Calc.b,elem);
+    Calc.Pb = addElement(Calc.Pb,elem);
 end
 
 %% Plot b sweep
@@ -194,7 +198,7 @@ fig(figID) = figure('NumberTitle', 'off',...
 fig(figID).OuterPosition = fig(figID).InnerPosition;
 
 
-subplot(1,1,1, ...
+ha = subplot(1,1,1, ...
     'FontSize', 20, ...
     'FontName', 'OpenSans', ...
     'FontWeight', 'bold',...
@@ -203,13 +207,13 @@ subplot(1,1,1, ...
 
 hold on;
 
-for k=1:numElements(Calc.b)
-    pl = plot(Sim.b{k}.Values,...
+for k=1:numElements(Calc.Pb)
+    pl = plot(Sim.Pb{k}.Values,...
         'LineStyle','-', ...
         'LineWidth',2, ....
-        'DisplayName',sprintf('%s', Sim.b{k}.Name));
+        'DisplayName',sprintf('%s', Sim.Pb{k}.Name));
 
-    plot(Calc.b{k}.Values,...
+    plot(Calc.Pb{k}.Values,...
         'Color', pl.Color,...
         'LineStyle','--', ...
         'LineWidth',2, ....
@@ -226,23 +230,25 @@ plot(0,0,...
 lgd = legend('Location', 'southeast');
 lgd.NumColumns = 2;
 ylim([0, 0.033]);
-ylabel('Frequency deviation [pu]', 'FontSize', 24, 'FontWeight', 'bold');
+ylabel('Absolute frequency dev.  [pu]', 'FontSize', 24, 'FontWeight', 'bold');
 xlabel('Time [s]', 'FontSize', 24, 'FontWeight', 'bold');
+ha.XAxis.TickValues(1) = '';
+
 
 %% b sweep with rtr = rss
 rtr = rss;
-b =  D * (rss * (1-rtr));
-Sim.b = Simulink.SimulationData.Dataset;
-Calc.b = Simulink.SimulationData.Dataset;
+Pb =  D * (rss * (1-rtr));
+Sim.Pbrss = Simulink.SimulationData.Dataset;
+Calc.Pbrss = Simulink.SimulationData.Dataset;
 
-for b = b*0.7:b*0.1:b*1.3
+for Pb = Pb*0.7:Pb*0.1:Pb*1.3
     sim('avg_model');
     elem = Simulink.SimulationData.Signal;
-    elem.Name = sprintf('b=%.3f', b);
+    elem.Name = sprintf('Pb=%.3f', Pb);
     elem.Values = yout{1}.Values;
-    Sim.b = addElement(Sim.b,elem);
+    Sim.Pbrss = addElement(Sim.Pbrss,elem);
     elem.Values = yout{2}.Values;
-    Calc.b = addElement(Calc.b,elem);
+    Calc.Pbrss = addElement(Calc.Pbrss,elem);
 end
 
 %% Plot b sweep with rtr = rss
@@ -255,7 +261,7 @@ fig(figID) = figure('NumberTitle', 'off',...
 fig(figID).OuterPosition = fig(figID).InnerPosition;
 
 
-subplot(1,1,1, ...
+ha = subplot(1,1,1, ...
     'FontSize', 20, ...
     'FontName', 'OpenSans', ...
     'FontWeight', 'bold',...
@@ -264,13 +270,13 @@ subplot(1,1,1, ...
 
 hold on;
 
-for k=1:numElements(Calc.b)
-    pl = plot(Sim.b{k}.Values,...
+for k=1:numElements(Calc.Pbrss)
+    pl = plot(Sim.Pbrss{k}.Values,...
         'LineStyle','-', ...
         'LineWidth',2, ....
-        'DisplayName',sprintf('%s', Sim.b{k}.Name));
+        'DisplayName',sprintf('%s', Sim.Pbrss{k}.Name));
 
-    plot(Calc.b{k}.Values,...
+    plot(Calc.Pbrss{k}.Values,...
         'Color', pl.Color,...
         'LineStyle','--', ...
         'LineWidth',2, ....
@@ -287,19 +293,20 @@ plot(0,0,...
 lgd = legend('Location', 'southeast');
 lgd.NumColumns = 2;
 ylim([0, 0.033]);
-ylabel('Frequency deviation [pu]', 'FontSize', 24, 'FontWeight', 'bold');
 xlabel('Time [s]', 'FontSize', 24, 'FontWeight', 'bold');
+ha.XAxis.TickValues(1) = '';
+set(ha, 'YTickLabel','');
 
 %% Tgt sweep With turbine governor
 
 % System
-b = 0.0428;
+Pb = 0.0428;
 rss = 0.025;
 rtr = 0.1;
 x0 = 0;
 M = 10.2;
 
-Dmin = b / (rss * (1-rtr));
+Dmin = Pb / (rss * (1-rtr));
 
 % Turbine governor
 Dtg1 = Dmin/2;
@@ -335,7 +342,7 @@ fig(figID) = figure('NumberTitle', 'off',...
 fig(figID).OuterPosition = fig(figID).InnerPosition;
 
 
-subplot(1,1,1, ...
+ha = subplot(1,1,1, ...
     'FontSize', 20, ...
     'FontName', 'OpenSans', ...
     'FontWeight', 'bold',...
@@ -359,6 +366,189 @@ end
 
 legend('Location', 'southeast');
 ylim([0, 0.0311]);
-ylabel('Frequency deviation [pu]', 'FontSize', 24, 'FontWeight', 'bold');
+ylabel('Absolute frequency dev.  [pu]', 'FontSize', 24, 'FontWeight', 'bold');
 xlabel('Time [s]', 'FontSize', 24, 'FontWeight', 'bold');
+ha.XAxis.TickValues(1) = '';
+
+
+%% Influence of M and Tgt 
+
+% System
+Pb = 0.0428;
+rss = 0.025;
+rtr = 0.1;
+x0 = 0;
+M = 10.2;
+
+Dmin = Pb / (rss * (1-rtr));
+
+% Turbine governor
+Dtg1 = Dmin/2;
+Ttg1 = 0.1;
+Tgt1 = 2.7;
+
+Dtg2 = Dtg1;
+Ttg2 = Ttg1;
+Tgt2 = Tgt1;
+
+
+Sim.MTgt = Simulink.SimulationData.Dataset;
+Calc.MTgt = Simulink.SimulationData.Dataset;
+
+for M = M:-M*0.2:M*0.4
+    sim('avg_model_gov');
+    elem = Simulink.SimulationData.Signal;
+    elem.Name = sprintf('M=%.1f', M);
+    elem.Values = yout{1}.Values;
+    Sim.MTgt = addElement(Sim.MTgt,elem);
+    elem.Values = yout{2}.Values;
+    Calc.MTgt = addElement(Calc.MTgt,elem);
+end
+
+Tgt1 = 0.1;
+Tgt2 = 2.7;
+M = 10.2;
+
+Sim.MTgt2 = Simulink.SimulationData.Dataset;
+Calc.MTgt2 = Simulink.SimulationData.Dataset;
+
+
+for M = M:-M*0.2:M*0.4
+    sim('avg_model_gov');
+    elem = Simulink.SimulationData.Signal;
+    elem.Name = sprintf('M=%.1f', M);
+    elem.Values = yout{1}.Values;
+    Sim.MTgt2 = addElement(Sim.MTgt2,elem);
+    elem.Values = yout{2}.Values;
+    Calc.MTgt2 = addElement(Calc.MTgt2,elem);
+end
+
+Tgt1 = 0.1;
+Tgt2 = Tgt1;
+M = 10.2;
+
+Sim.MTgt3 = Simulink.SimulationData.Dataset;
+Calc.MTgt3 = Simulink.SimulationData.Dataset;
+
+
+for M = M:-M*0.2:M*0.4
+    sim('avg_model_gov');
+    elem = Simulink.SimulationData.Signal;
+    elem.Name = sprintf('M=%.1f', M);
+    elem.Values = yout{1}.Values;
+    Sim.MTgt3 = addElement(Sim.MTgt3,elem);
+    elem.Values = yout{2}.Values;
+    Calc.MTgt3 = addElement(Calc.MTgt3,elem);
+end
+
+
+
+%% Plot Influence of M and Tgt 
+
+figID = figID + 1;
+fig(figID) = figure('NumberTitle', 'off',...
+    'Units', 'centimeters', ...
+    'InnerPosition', [0 0 22 17.6], ...
+    'Color','w');
+fig(figID).OuterPosition = fig(figID).InnerPosition;
+
+ha = subplot(1,1,1, ...
+    'FontSize', 20, ...
+    'FontName', 'OpenSans', ...
+    'FontWeight', 'bold',...
+    'XGrid', 'on', ...
+    'YGrid', 'on');
+
+hold on;
+
+plot(Calc.MTgt{1}.Values, ...
+        'Color','k', ...
+        'LineStyle','--', ...
+        'LineWidth',2, ....
+        'DisplayName','Steady-state limit');
+
+for k=1:numElements(Calc.MTgt)
+    pl = plot(Sim.MTgt{k}.Values,...
+        'LineStyle','-', ...
+        'LineWidth',2, ....
+        'DisplayName',sprintf('%s', Sim.MTgt{k}.Name));
+end
+
+legend('Location', 'southeast');
+ylim([0, 0.0351]);
+ylabel('Absolute frequency dev.  [pu]', 'FontSize', 24, 'FontWeight', 'bold');
+xlabel('Time [s]', 'FontSize', 24, 'FontWeight', 'bold');
+ha.XAxis.TickValues(1) = '';
+
+
+figID = figID + 1;
+fig(figID) = figure('NumberTitle', 'off',...
+    'Units', 'centimeters', ...
+    'InnerPosition', [0 0 22 17.6], ...
+    'Color','w');
+fig(figID).OuterPosition = fig(figID).InnerPosition;
+
+ha = subplot(1,1,1, ...
+    'FontSize', 20, ...
+    'FontName', 'OpenSans', ...
+    'FontWeight', 'bold',...
+    'XGrid', 'on', ...
+    'YGrid', 'on');
+
+hold on;
+
+plot(Calc.MTgt2{1}.Values, ...
+        'Color','k', ...
+        'LineStyle','--', ...
+        'LineWidth',2, ....
+        'DisplayName','Steady-state limit');
+
+for k=1:numElements(Calc.MTgt2)
+    pl = plot(Sim.MTgt2{k}.Values,...
+        'LineStyle','-', ...
+        'LineWidth',2, ....
+        'DisplayName',sprintf('%s', Sim.MTgt2{k}.Name));
+end
+
+legend('Location', 'southeast');
+ylim([0, 0.0351]);
+xlabel('Time [s]', 'FontSize', 24, 'FontWeight', 'bold');
+ha.XAxis.TickValues(1) = '';
+set(ha, 'YTickLabel','');
+
+
+figID = figID + 1;
+fig(figID) = figure('NumberTitle', 'off',...
+    'Units', 'centimeters', ...
+    'InnerPosition', [0 0 22 17.6], ...
+    'Color','w');
+fig(figID).OuterPosition = fig(figID).InnerPosition;
+
+ha = subplot(1,1,1, ...
+    'FontSize', 20, ...
+    'FontName', 'OpenSans', ...
+    'FontWeight', 'bold',...
+    'XGrid', 'on', ...
+    'YGrid', 'on');
+
+hold on;
+
+plot(Calc.MTgt3{1}.Values, ...
+        'Color','k', ...
+        'LineStyle','--', ...
+        'LineWidth',2, ....
+        'DisplayName','Steady-state limit');
+
+for k=1:numElements(Calc.MTgt3)
+    pl = plot(Sim.MTgt3{k}.Values,...
+        'LineStyle','-', ...
+        'LineWidth',2, ....
+        'DisplayName',sprintf('%s', Sim.MTgt3{k}.Name));
+end
+
+legend('Location', 'southeast');
+ylim([0, 0.0351]);
+xlabel('Time [s]', 'FontSize', 24, 'FontWeight', 'bold');
+ha.XAxis.TickValues(1) = '';
+set(ha, 'YTickLabel','');
 
